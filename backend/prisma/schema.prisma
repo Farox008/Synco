@@ -1,0 +1,171 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model WorkOrder {
+  id         String   @id // e.g., "WO-9801"
+  customer   String
+  priority   String
+  status     String   @default("Pending")
+  dueDate    DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  metadata   WorkOrderMetadata[]
+  jobs       Job[]
+  purchases  Purchase[]
+}
+
+model WorkOrderMetadata {
+  id          Int       @id @default(autoincrement())
+  workOrderId String
+  metaKey     String
+  metaValue   String?
+
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+}
+
+model Job {
+  id             String    @id // e.g., "WO-9801/1"
+  workOrderId    String
+  name           String
+  qty            Int       @default(1)
+  material       String?
+  catalogSize    String?
+  dimensions     String?
+  supplier       String?
+  startDate      DateTime?
+  expectedDate   DateTime?
+  processPath    String?
+  progress       Int       @default(0)
+  status         String    @default("Transit")
+
+  workOrder      WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  processes      JobProcess[]
+}
+
+model JobProcess {
+  id              Int     @id @default(autoincrement())
+  jobId           String
+  department      String
+  estimatedHours  Float   @default(0)
+  actualHours     Float   @default(0)
+  status          String  @default("N/A")
+  assignedMachine String?
+
+  job             Job     @relation(fields: [jobId], references: [id], onDelete: Cascade)
+}
+
+model Machine {
+  id              String    @id // e.g., "CNC-01"
+  name            String
+  type            String?
+  status          String    @default("idle")
+  activeJobId     String?
+  efficiency      Int       @default(0)
+  runtimeHours    Int       @default(0)
+  lastMaintenance DateTime?
+}
+
+model Purchase {
+  id          String   @id // e.g., "PO-7712"
+  workOrderId String?
+  vendor      String
+  itemName    String
+  specs       String?
+  amount      Float?
+  status      String   @default("Ordered")
+  createdAt   DateTime @default(now())
+
+  workOrder   WorkOrder? @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
+}
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  userName    String
+  action      String
+  targetId    String?
+  createdAt   DateTime @default(now())
+}
+
+model Department {
+  id            String     @id
+  name          String
+  description   String?
+  employeeCount Int        @default(0)
+  status        String     @default("Active")
+  employees     Employee[]
+}
+
+model ProductionLine {
+  id            String     @id
+  name          String
+  parentId      String?
+  description   String?
+  employeeCount Int        @default(0)
+  status        String     @default("Active")
+  employees     Employee[]
+}
+
+model EmploymentType {
+  id          String     @id
+  name        String
+  description String?
+  status      String     @default("Active")
+  employees   Employee[]
+}
+
+model Shift {
+  id            String     @id
+  name          String
+  startTime     String
+  endTime       String
+  breakDuration Int        @default(45)
+  status        String     @default("Active")
+  employees     Employee[]
+}
+
+model Employee {
+  id                    String   @id // e.g., "EMP-001"
+  firstName             String
+  lastName              String
+  preferredName         String?
+  gender                String?
+  dateOfBirth           String?
+  nationality           String?
+  profilePicture        String?
+  departmentId          String?
+  productionLineId      String?
+  designation           String
+  employmentTypeId      String?
+  joiningDate           String?
+  shiftId               String?
+  employmentStatus      String   @default("Active")
+  email                 String?
+  phoneNumber           String?
+  address               String?
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  skills                String? // Store as JSON string or comma separated for simplicity
+
+  // Auth & RBAC
+  username              String?  @unique
+  passwordHash          String?
+  role                  String?
+  accountStatus         String   @default("active")
+  failedLoginAttempts   Int      @default(0)
+  lastLogin             DateTime?
+  passwordChangedAt     DateTime?
+
+  department            Department?      @relation(fields: [departmentId], references: [id])
+  productionLine        ProductionLine?  @relation(fields: [productionLineId], references: [id])
+  employmentType        EmploymentType?  @relation(fields: [employmentTypeId], references: [id])
+  shift                 Shift?           @relation(fields: [shiftId], references: [id])
+}

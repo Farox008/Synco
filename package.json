@@ -1,0 +1,14 @@
+{
+  "name": "synco_app",
+  "version": "1.0.0",
+  "description": "Synco App Monorepo",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\" \"npm run dev:prisma\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:prisma": "cd backend && npx prisma dev"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

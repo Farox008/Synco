@@ -1,0 +1,306 @@
+# Synco ERP/MES — Enterprise Roles & Permissions (RBAC) Architecture Specification
+
+---
+
+## 1. Executive Summary
+
+The Synco ERP/MES Role-Based Access Control (RBAC) Architecture defines a highly structured, scalable security model designed for manufacturing organizations. By strictly enforcing the Principle of Least Privilege (PoLP) and Separation of Duties (SoD), the system ensures that every department—from Administration and Design to Production and Dispatch—interacts only with the data and modules necessary for their specific workflows. This architecture supports dynamic organizational growth, accommodating single-factory setups and scaling securely to multi-branch or multi-company enterprise environments.
+
+---
+
+## 2. System Security Overview
+
+Synco’s security model is built on enterprise-grade principles:
+- **Role-Based Access Control (RBAC):** Users are assigned to functional roles rather than receiving direct permissions.
+- **Principle of Least Privilege (PoLP):** Default access is denied; permissions must be explicitly granted.
+- **Separation of Duties (SoD):** Critical processes (e.g., creating a Purchase Order vs. approving it) require distinct roles.
+- **Inheritance Model:** Hierarchical roles allow supervisors to inherit the baseline permissions of their subordinates, adding approval and reporting capabilities.
+- **Granular Data Visibility:** Horizontal security filters ensure users only see entities (Job Orders, Tools) assigned to their department or factory.
+
+---
+
+## 3. Department Structure
+
+The manufacturing lifecycle is segmented into specialized departments with clear boundaries:
+
+1. **Administration:** System configuration, user management, global oversight, HR, and accounting.
+2. **Design:** Engineering, CAD drawings, BOM creation, and Tool specification.
+3. **Purchase:** Supplier management, procurement, inventory reservation, and receiving.
+4. **Planning:** Routing, capacity planning, machine allocation, scheduling, and job release.
+5. **Inventory / Store:** Raw material handling, stock management, and issuing materials to production.
+6. **Production:** Execution of manufacturing operations across specialized sub-departments (Milling, Machining, Wire EDM, Grinding, Finishing, Assembly).
+7. **Quality Inspection:** Verification of tolerances, NCR generation, and rework approval.
+8. **Dispatch:** Packaging, logistics, and final product shipment.
+
+---
+
+## 4. Organizational Hierarchy
+
+```mermaid
+graph TD
+    SA[Super Admin] --> ADMIN[System Administrator]
+    ADMIN --> HR[HR]
+    ADMIN --> ACC[Accounts]
+    
+    ADMIN --> DM[Design Manager]
+    DM --> DES[Designer]
+    
+    ADMIN --> PM[Purchase Manager]
+    PM --> PE[Purchase Executive]
+    
+    ADMIN --> PLM[Planning Manager]
+    PLM --> PL[Production Planner]
+    
+    ADMIN --> SM[Store Manager]
+    SM --> SK[Store Keeper]
+    
+    ADMIN --> PRM[Production Manager]
+    PRM --> PS[Production Supervisor]
+    
+    PS --> MS[Milling Supervisor]
+    MS --> MMO[Manual Milling Operator]
+    MS --> CNO[CNC Milling Operator]
+    
+    PS --> CMO[CNC Machining Operator]
+    PS --> WEO[Wire EDM Operator]
+    
+    PS --> GS[Grinding Supervisor]
+    GS --> GMO[Manual Grinding Operator]
+    GS --> PO[Polishing Operator]
+    
+    PS --> FO[Finishing Operator]
+    
+    PS --> AS[Assembly Supervisor]
+    AS --> AO[Assembly Operator]
+    
+    ADMIN --> QM[QI Manager]
+    QM --> QI[QI Inspector]
+    
+    ADMIN --> DE[Dispatch Executive]
+```
+
+---
+
+## 5. Default User Accounts
+
+*Temporary development credentials. MFA is disabled for initial setup.*
+
+| Full Name | Username | Password | Dept | Role | Emp ID | Status | Force Change |
+|---|---|---|---|---|---|---|---|
+| Admin Root | `admin` | `Dev@Admin123!` | Administration | Super Admin | ADM-001 | Active | Yes |
+| Sarah Connor | `sarah.hr` | `Dev@HR123!` | Administration | HR | ADM-002 | Active | Yes |
+| John Carter | `john.design` | `Dev@Des123!` | Design | Design Manager | DES-001 | Active | Yes |
+| Emily Chen | `emily.cad` | `Dev@Cad123!` | Design | Designer | DES-002 | Active | Yes |
+| Robert King | `robert.buy` | `Dev@Buy123!` | Purchase | Purchase Manager | PUR-001 | Active | Yes |
+| Lisa Wong | `lisa.plan` | `Dev@Plan123!` | Planning | Planning Manager | PLN-001 | Active | Yes |
+| Mike Davis | `mike.store` | `Dev@Str123!` | Inventory | Store Keeper | INV-001 | Active | Yes |
+| David Smith | `david.prod` | `Dev@Prd123!` | Production | Production Manager | PRD-001 | Active | Yes |
+| Tom Wilson | `tom.cnc` | `Dev@Cnc123!` | Milling | CNC Milling Operator| PRD-012 | Active | Yes |
+| Anna Taylor | `anna.qa` | `Dev@Qa123!` | Quality | QI Manager | QUA-001 | Active | Yes |
+| Mark Jones | `mark.ship` | `Dev@Ship123!`| Dispatch | Dispatch Executive | DIS-001 | Active | Yes |
+
+---
+
+## 6. Role Definitions
+
+### Design Manager
+- **Department:** Design
+- **Reports To:** System Administrator
+- **Job Purpose:** Oversee the engineering and design phase of all tools.
+- **Daily Responsibilities:** Review and approve technical drawings, validate BOMs, assign design tasks.
+- **Operational Responsibilities:** Ensure design specifications meet manufacturing capabilities.
+- **Decision-making:** Approve Design Revisions, reject flawed requirements.
+- **Ownership:** Drawings, BOM accuracy, Tool technical specifications.
+
+### Production Planner
+- **Department:** Planning
+- **Reports To:** Planning Manager
+- **Job Purpose:** Translate approved designs and procured materials into actionable manufacturing schedules.
+- **Daily Responsibilities:** Define machine routings, allocate operations to departments, estimate times.
+- **Operational Responsibilities:** Maintain machine utilization balance and prevent bottlenecks.
+- **Decision-making:** Prioritize Job Orders, release Jobs to the production floor.
+- **Ownership:** Routing, Machine Allocation, Production Schedule.
+
+### CNC Milling Operator
+- **Department:** Production (Milling)
+- **Reports To:** Milling Supervisor
+- **Job Purpose:** Execute CNC milling operations safely and efficiently.
+- **Daily Responsibilities:** Receive operation instructions, load programs, log start/end times, log scrap.
+- **Operational Responsibilities:** Machine maintenance logging, tool wear monitoring.
+- **Decision-making:** Can flag an operation as delayed or requiring maintenance.
+- **Ownership:** Assigned operational steps on specific Job Orders.
+
+*(Additional roles follow this exact schema based on the hierarchy).*
+
+---
+
+## 7. Sidebar Navigation Matrix
+
+| Module | Super Admin | Design Mgr | Purchase Mgr | Planner | Prod. Mgr | CNC Operator | QI Inspector |
+|---|---|---|---|---|---|---|---|
+| Dashboard | Editable | Read Only | Read Only | Read Only | Read Only | Read Only | Read Only |
+| Job Orders | Editable | Editable | Hidden | Editable | Read Only | Hidden | Hidden |
+| Tools | Editable | Editable | Hidden | Read Only | Read Only | Hidden | Read Only |
+| BOM | Editable | Editable | Read Only | Read Only | Hidden | Hidden | Hidden |
+| Inventory | Editable | Hidden | Editable | Read Only | Read Only | Hidden | Hidden |
+| Purchases | Editable | Hidden | Editable | Hidden | Hidden | Hidden | Hidden |
+| Planning | Editable | Hidden | Hidden | Editable | Read Only | Hidden | Hidden |
+| Prod. Queue | Editable | Hidden | Hidden | Read Only | Editable | Editable | Hidden |
+| Quality | Editable | Hidden | Hidden | Hidden | Read Only | Hidden | Editable |
+| Dispatch | Editable | Hidden | Hidden | Hidden | Hidden | Hidden | Hidden |
+| Reports | Editable | Hidden | Hidden | Editable | Editable | Hidden | Hidden |
+| User Mgmt | Editable | Hidden | Hidden | Hidden | Hidden | Hidden | Hidden |
+
+---
+
+## 8. Module Access Matrix
+
+| Module | Create | Read | Update | Delete | Approve | Import/Export |
+|---|---|---|---|---|---|---|
+| **Job Orders** | Admin, Planner | All Managers | Admin, Planner | Admin | Planner | Admin, Planner |
+| **BOM** | Admin, Designer | Planner, Purchase | Admin, Designer | Admin | Design Mgr | Admin, Designer |
+| **Purchases** | Admin, Purchase | Admin, Purchase | Admin, Purchase | Admin | Purchase Mgr | Admin, Purchase |
+| **Routing** | Admin, Planner | Prod. Mgr | Admin, Planner | Admin | Planner Mgr | Admin, Planner |
+| **Prod. Queue**| Prod. Supervisor | Operators | Operators (Status) | Admin | Prod. Supervisor | Admin |
+| **Quality** | QI Inspector | Prod. Mgr, Planner| QI Inspector | Admin | QI Manager | Admin |
+
+---
+
+## 9. Page Access Matrix (Example: Job Order Detail Page)
+
+**Role: Production Planner**
+- **Visible Components:** Job Header, Routing Table, BOM Summary, Priority Selector, Scheduling Timeline.
+- **Hidden Components:** Purchase Costs, Supplier Details.
+- **Allowed Actions:** Update Priority, Assign Machine, Edit Routing, Release Job.
+- **Restricted Actions:** Delete Job, Edit Tool Design.
+- **Buttons Available:** `Release Job`, `Edit Routing`, `Hold`.
+- **Buttons Hidden:** `Edit BOM`, `Delete`.
+
+**Role: CNC Operator**
+- **Visible Components:** Assigned Operation Card, Drawing Attachments, Timer.
+- **Hidden Components:** Costing, BOM, Operations assigned to other departments.
+- **Allowed Actions:** Start Timer, Stop Timer, Log Scrap, Add Downtime.
+- **Restricted Actions:** Reassign machine, change routing.
+- **Buttons Available:** `Start`, `Complete`, `Log Issue`.
+- **Buttons Hidden:** `Release Job`, `Edit Order`.
+
+---
+
+## 10. CRUD Permission Matrix
+
+| Entity | Role | Create | Read | Update | Delete | Approve | Release | Complete |
+|---|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Tool** | Designer | ✓ | ✓ | ✓ | | | | |
+| **Tool** | Design Mgr | ✓ | ✓ | ✓ | | ✓ | | |
+| **Job Order** | Planner | ✓ | ✓ | ✓ | | | ✓ | |
+| **Purchase** | Purchase Exec | ✓ | ✓ | ✓ | | | | |
+| **Purchase** | Purchase Mgr | ✓ | ✓ | ✓ | ✓ | ✓ | | |
+| **Operation** | CNC Op | | ✓ | ✓(Status)| | | | ✓ |
+| **NCR** | QI Inspector | ✓ | ✓ | ✓ | | | | |
+| **NCR** | QI Manager | ✓ | ✓ | ✓ | ✓ | ✓ | | ✓ |
+
+---
+
+## 11. Approval Matrix
+
+| Process | Requester | Approver | Escalation (48h) | Fallback |
+|---|---|---|---|---|
+| **Design Revision** | Designer | Design Manager | System Admin | Super Admin |
+| **PO Generation (>$5k)**| Purchase Exec | Purchase Manager | Accounts | System Admin |
+| **Job Release** | Production Planner| Planning Manager | Production Manager | System Admin |
+| **Rework / Scrap** | Prod. Supervisor | QI Manager | Production Manager | System Admin |
+| **User Creation** | HR | System Administrator| Super Admin | Super Admin |
+
+---
+
+## 12. Data Visibility Matrix
+
+| Role | Cross-Department | Financial/Costs | Salary Info | Supplier Pricing |
+|---|:---:|:---:|:---:|:---:|
+| **Super Admin** | Full | Full | Full | Full |
+| **HR** | Full | Hidden | Full | Hidden |
+| **Design Manager** | Limited (Read) | Hidden | Hidden | Hidden |
+| **Purchase Mgr** | Limited (Read) | Read Only | Hidden | Full |
+| **Planning Mgr** | Full (Read) | Read Only | Hidden | Hidden |
+| **Prod. Supervisor** | Limited (Own Dept)| Hidden | Hidden | Hidden |
+| **Operators** | Own Tasks Only | Hidden | Hidden | Hidden |
+
+---
+
+## 13. Notification Matrix
+
+| Trigger | Sender (System/User) | Receiver | Priority | Channel |
+|---|---|---|---|---|
+| **BOM Uploaded** | Designer | Purchase Dept, Planner | Normal | In-App, Dashboard |
+| **Materials Received** | Store Keeper | Planner | High | In-App, Dashboard |
+| **Job Released** | Planner | Production Supervisors | High | Email, In-App |
+| **Machine Breakdown** | Operator | Maintenance, Prod. Mgr | Urgent | SMS, Email, In-App |
+| **Operation Complete** | Operator | Next Dept Supervisor | Normal | In-App |
+| **Quality Reject (NCR)** | QI Inspector | Prod. Supervisor, Planner | High | Email, In-App |
+
+---
+
+## 14. Dashboard Matrix
+
+| Role | Visible Widgets | Shortcuts | Alerts |
+|---|---|---|---|
+| **Super Admin** | System Health, Global KPIs, User Activity | User Mgmt, Settings | System Errors |
+| **Planning Mgr** | Active Jobs, Delayed Jobs, Machine Utilization | Create Job, Master Schedule| Material Shortages |
+| **Purchase Mgr** | Pending POs, Low Inventory, Supplier Delivery | Create PO, Inventory | Overdue Deliveries |
+| **Prod. Supervisor** | Dept Queue, Active Operations, Downtime | Queue, Maintenance | NCRs, Breakdowns |
+| **Operator** | My Active Task, Next in Queue | Scan Barcode | Maintenance Reminders |
+
+---
+
+## 15. Audit Logging Matrix
+
+Every mutation requires an audit log entry.
+**Schema:** `[Timestamp] | [User] | [Role] | [Action] | [Entity] | [Old Value] -> [New Value] | [IP Address]`
+
+**Monitored Actions:**
+- **Job Orders:** Create, Release, Priority Change, Cancel.
+- **BOM:** Upload, Revision Change.
+- **Purchases:** Approve PO, Change Price, Receive Goods.
+- **Production:** Start Operation, Stop Operation, Scrap Quantity update.
+- **System:** Login success/fail, Permission change, User creation.
+
+---
+
+## 16. Permission Inheritance Model
+
+Roles are constructed hierarchically. A parent role automatically inherits all `Read` and `Update` permissions of its children, plus unique `Approve` or `Delete` capabilities.
+
+1. **Base User:** Can login, view own profile, change password.
+2. **Operator (Child):** Inherits Base + Can interact with assigned Operations.
+3. **Supervisor (Parent):** Inherits Operator + Can assign Operations, view Department KPIs.
+4. **Manager (Parent):** Inherits Supervisor + Can view Cross-Department KPIs, approve Rework.
+
+*Code Implementation Strategy:*
+```typescript
+const RoleHierarchy = {
+  "Milling Supervisor": ["Manual Milling Operator", "CNC Milling Operator"],
+  "Production Manager": ["Milling Supervisor", "Grinding Supervisor", "Assembly Supervisor"]
+}
+// Permissions resolve recursively downwards.
+```
+
+---
+
+## 17. Security Policies
+
+- **Session Timeout:** 30 minutes of inactivity for web portal; 12 hours for shop floor tablets.
+- **Password Policy:** Minimum 12 characters, 1 uppercase, 1 number, 1 special character. Rotated every 90 days.
+- **MFA:** Mandatory for Administration, HR, Accounts, and all Managers. Optional for floor operators using restricted shop-floor IP addresses.
+- **IP Restrictions:** Shop-floor operator logins restricted to internal factory IPs. Admin/Management accessible externally via VPN.
+- **Account Lockout:** 5 failed attempts locks account for 15 minutes.
+- **Data Encryption:** TLS 1.3 in transit. AES-256 at rest for database volumes.
+
+---
+
+## 18. Future Scalability Strategy
+
+To support upcoming Multi-Factory and Multi-Company requirements without rewriting the authorization core:
+1. **Contextual Claims:** JWTs will include `factoryId` and `companyId`.
+2. **Entity Tenancy:** Every database table will require a `tenantId` (Company) and `facilityId` (Factory).
+3. **Role Scoping:** Roles will be evaluated dynamically against the current context (e.g., `Production Manager` scoped to `Factory A` cannot authorize a release in `Factory B`).
+4. **Global Roles:** Only specific roles (e.g., `Super Admin`, `Regional Executive`) will possess a wildcard `*` scope for cross-facility analytics.
